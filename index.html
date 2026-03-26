@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giải Mã Script Roblox - Deobfuscator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.4/beautify.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+    <div class="max-w-6xl mx-auto px-6 py-10">
+        <div class="text-center mb-10">
+            <h1 class="text-5xl font-bold tracking-tighter text-cyan-400">Giải Mã Script Roblox</h1>
+            <p class="text-zinc-400 mt-3 text-lg">Deobfuscator & Beautifier cho Lua/JS Script Roblox</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-2xl font-semibold">Input Script (Obfuscated)</h2>
+                    <div class="flex gap-3">
+                        <button onclick="loadSample()" 
+                                class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Sample</button>
+                        <label class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-2xl text-sm cursor-pointer">
+                            Chọn tệp
+                            <input type="file" id="fileInput" accept=".js,.lua,.txt" class="hidden" onchange="handleFile(event)">
+                        </label>
+                    </div>
+                </div>
+                <textarea id="inputCode" rows="18"
+                    class="mono w-full bg-zinc-900 border border-white/10 rounded-3xl p-6 text-sm resize-y focus:outline-none focus:border-cyan-400"
+                    placeholder="Dán script bị obfuscate vào đây..."></textarea>
+            </div>
+
+            <!-- Output -->
+            <div>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-2xl font-semibold">Output (Đã giải mã)</h2>
+                    <button onclick="downloadResult()" 
+                            id="downloadBtn"
+                            class="hidden px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-black font-semibold rounded-2xl">
+                        ⬇️ Tải về máy
+                    </button>
+                </div>
+                <textarea id="outputCode" rows="18" readonly
+                    class="mono w-full bg-zinc-900 border border-white/10 rounded-3xl p-6 text-sm resize-y focus:outline-none"></textarea>
+            </div>
+        </div>
+
+        <div class="flex justify-center mt-10">
+            <button onclick="deobfuscateScript()"
+                    class="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-bold text-2xl px-16 py-7 rounded-3xl shadow-xl shadow-cyan-500/30 flex items-center gap-3">
+                <span>Giải Obf Script Roblox</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7-7 7M5 12h14" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="mt-8 text-center text-xs text-zinc-500">
+            Công cụ sử dụng js-beautify + một số kỹ thuật unpack cơ bản.<br>
+            Không đảm bảo giải được 100% script Roblox obfuscate nặng.
+        </div>
+    </div>
+
+    <script>
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                document.getElementById('inputCode').value = event.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        function loadSample() {
+            const sample = `print("Hello Roblox")\nlocal a = "Hello"\nlocal b = string.char(72,101,108,108,111)\nprint(b)`;
+            document.getElementById('inputCode').value = sample;
+        }
+
+        // Hàm xử lý cơ bản một số obfuscation phổ biến
+        function simpleDeobfuscate(code) {
+            let result = code;
+
+            // Unescape hex/unicode strings phổ biến
+            result = result.replace(/\\x([0-9A-Fa-f]{2})/g, (match, p1) => {
+                return String.fromCharCode(parseInt(p1, 16));
+            });
+
+            // Thay thế một số pattern eval đơn giản (cẩn thận)
+            result = result.replace(/eval\((["'`])(.*?)\1\)/gs, (match, quote, inner) => {
+                try {
+                    return inner.replace(/\\"/g, '"').replace(/\\'/g, "'");
+                } catch(e) {
+                    return match;
+                }
+            });
+
+            // Beautify bằng js-beautify
+            try {
+                result = js_beautify(result, {
+                    indent_size: 2,
+                    indent_char: " ",
+                    max_preserve_newlines: 2,
+                    preserve_newlines: true,
+                    keep_array_indentation: false,
+                    break_chained_methods: false,
+                    indent_scripts: "normal",
+                    brace_style: "collapse",
+                    space_before_conditional: true,
+                    unescape_strings: true,
+                    jslint_happy: false,
+                    end_with_newline: true,
+                    wrap_line_length: 0,
+                    indent_inner_html: false,
+                    comma_first: false,
+                    e4x: false,
+                    indent_empty_lines: false
+                });
+            } catch(e) {
+                console.warn("Beautify error:", e);
+            }
+
+            return result;
+        }
+
+        function deobfuscateScript() {
+            const input = document.getElementById('inputCode').value.trim();
+            if (!input) {
+                alert("Vui lòng nhập script hoặc chọn file!");
+                return;
+            }
+
+            const outputArea = document.getElementById('outputCode');
+            outputArea.value = "Đang giải mã...";
+
+            // Giả lập delay nhẹ cho UX
+            setTimeout(() => {
+                const deobfCode = simpleDeobfuscate(input);
+                outputArea.value = deobfCode || "Không thể giải mã (script quá phức tạp hoặc lỗi).";
+
+                // Hiển thị nút tải
+                document.getElementById('downloadBtn').classList.remove('hidden');
+            }, 300);
+        }
+
+        function downloadResult() {
+            const content = document.getElementById('outputCode').value;
+            if (!content) return;
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `deobfuscated_script_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.lua`; // hoặc .js
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Tailwind script
+        tailwind.config = {
+            content: [],
+            theme: {
+                extend: {}
+            }
+        };
+    </script>
+</body>
+              </html>
